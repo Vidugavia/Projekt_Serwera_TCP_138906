@@ -41,6 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PassGen.cs" />
     <Compile Include="TcpSoftware.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

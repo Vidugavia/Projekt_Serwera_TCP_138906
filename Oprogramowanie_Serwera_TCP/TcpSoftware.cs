@@ -16,17 +16,13 @@ namespace Oprogramowanie_Serwera_TCP
         /// 
         #region Fields
 
-        TcpListener tcpListener { get; set; };
-        TcpClient tcpClient { get; set; };
-        IPAddress iPAddress { get; set; };
-        string asciiString = ""; // used to convert from byte[] to string
-        string input = ""; // used to receive proper input to the program
-        char[] charToTrim = { '\0', '\r', '\n' }; // chars we don't want to be in buffer
-        string prompt = "$";
+        protected TcpListener tcpListener { get; set; }
+        protected TcpClient tcpClient { get; set; }
+        protected IPAddress iPAddress { get; set; }
         bool running;
         int port;
         int buffer_size = 1024;
-        NetworkStream stream { get; set; };
+        NetworkStream stream { get; set; }
         
         #endregion
 
@@ -209,111 +205,5 @@ namespace Oprogramowanie_Serwera_TCP
         public abstract void Start();
 
         #endregion
-
-        /// <summary>
-        /// This function sends a message to client
-        /// </summary>
-        void Send(TcpClient client, byte[] buffer, string message)
-        {
-            buffer = Encoding.ASCII.GetBytes(message);
-            client.GetStream().Write(buffer, 0, buffer.Length);
-        }
-
-        /// <summary>
-        /// This function receives a message from client
-        /// </summary>
-        void Receive(TcpClient client, byte[] buffer)
-        {
-            Send(client, buffer, prompt);
-            buffer = new byte[1024];
-            do
-            {
-                client.GetStream().Read(buffer, 0, 1024);
-                asciiString = Encoding.ASCII.GetString(buffer, 0, buffer.Length);
-                input = asciiString.TrimEnd(charToTrim);
-            } while (input == "");
-
-        }
-
-        /// <summary>
-        /// This is main program to generate passwords
-        /// </summary>
-        void GenPass(TcpClient client, byte[] buffer)
-        {
-            Random rnd = new Random();
-            Send(client, buffer, "How many passwords? ");
-            Receive(client, buffer);
-            string[] passwd;
-            int size = Int32.Parse(input);
-            passwd = new string[size];
-            for (int i = 0; i < size; i++)
-            {
-                Send(client, buffer, "How many letters in " + (i + 1) + " password? ");
-                Receive(client, buffer);
-                for (int j = 0; j < Int32.Parse(input); j++)
-                {
-                    passwd[i] += (char)rnd.Next(33, 126);
-                }
-                Send(client, buffer, passwd[i]);
-                Send(client, buffer, "\r\n");
-            }
-            return;
-        }
-
-        /// <summary>
-        /// This is main user interface
-        /// </summary>
-        public void UI(TcpClient client, byte[] buffer)
-        {
-            Receive(client, buffer);
-
-            switch (input)
-            {
-                case "genpass":
-                    GenPass(client, buffer);
-                    break;
-                case "exit":
-                    client.Close();
-                    return;
-                case "":
-                    break;
-                default:
-                    buffer = Encoding.ASCII.GetBytes("No such command.\r\nTo start please enter the code \"genpass\"\r\nEnter \"exit\" to close the connection\r\n\r\n");
-                    client.GetStream().Write(buffer, 0, buffer.Length);
-                    break;
-            }
-        }
-
-        void Start()
-        {
-            server.Start();
-            while (true)
-            {
-                client = server.AcceptTcpClient();
-                byte[] buffer = new byte[1024];
-
-                while (client.Connected)
-                {
-                    /// <summary>
-                    /// Wyswietlenie komunikatu startowego i przejscie do oprogramowania
-                    /// </summary>
-                    try
-                    {
-                        buffer = Encoding.ASCII.GetBytes("Password generator server by Dawid Bronszkiewicz.\r\nTo start please enter the code \"genpass\".\r\nEnter \"exit\" to close the connection.\r\n\r\n");
-                        client.GetStream().Write(buffer, 0, buffer.Length);
-                        tcpSoftware.UI(client, buffer);
-                    }
-                    /// <summary>
-                    /// Wyłapanie wyjątku powoduje wyświetlenie komunikatu o błędzie i zamknięcie połączenia
-                    /// </summary>
-                    catch
-                    {
-                        buffer = Encoding.ASCII.GetBytes("ERROR! Closing connection.\r\n\r\n");
-                        client.GetStream().Write(buffer, 0, buffer.Length);
-                        client.Close();
-                    }
-                }
-            }
-        }
     }
 }
