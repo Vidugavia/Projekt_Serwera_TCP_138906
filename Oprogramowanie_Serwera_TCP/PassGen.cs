@@ -58,8 +58,6 @@ namespace Oprogramowanie_Serwera_TCP
                 //IAsyncResult result = transmissionDelegate.BeginInvoke(Stream, null, null);
 
                 ////operacje......
-                
-                buffer = new byte[Buffer_size];
 
                 while (tcpClient.Connected)
                 {
@@ -98,65 +96,25 @@ namespace Oprogramowanie_Serwera_TCP
 
         }
 
-        protected override void BeginDataTransmission(NetworkStream stream)
-
-        {
-
-            byte[] buffer = new byte[Buffer_size];
-
-            while (true)
-
-            {
-
-                try
-
-                {
-
-                    int message_size = stream.Read(buffer, 0, Buffer_size);
-
-                    stream.Write(buffer, 0, message_size);
-
-                }
-
-                catch (IOException e)
-
-                {
-
-                    break;
-
-                }
-
-            }
-
-        }
-
-        public override void Start()
-
-        {
-
-            
-
-        }
-
         /// <summary>
         /// This function sends a message to client
         /// </summary>
-        void Send(TcpClient client, byte[] buffer, string message)
+        protected override void Send(NetworkStream stream, byte[] buffer, string message)
         {
             buffer = Encoding.ASCII.GetBytes(message);
-            client.GetStream().Write(buffer, 0, buffer.Length);
+            stream.Write(buffer, 0, buffer.Length);
         }
 
         /// <summary>
         /// This function receives a message from client
         /// </summary>
-        void Receive(TcpClient client, byte[] buffer)
+        protected override void Receive(NetworkStream stream, byte[] buffer)
         {
-            Send(client, buffer, prompt);
+            Send(tcpClient.GetStream(), buffer, prompt);
             buffer = new byte[1024];
             do
             {
-                client.GetStream().Read(buffer, 0, 1024);
+                tcpClient.GetStream().Read(buffer, 0, 1024);
                 asciiString = Encoding.ASCII.GetString(buffer, 0, buffer.Length);
                 input = asciiString.TrimEnd(charToTrim);
             } while (input == "");
@@ -169,21 +127,21 @@ namespace Oprogramowanie_Serwera_TCP
         void GenPass(TcpClient client, byte[] buffer)
         {
             Random rnd = new Random();
-            Send(client, buffer, "How many passwords? ");
-            Receive(client, buffer);
+            Send(tcpClient.GetStream(), buffer, "How many passwords? ");
+            Receive(tcpClient.GetStream(), buffer);
             string[] passwd;
             int size = Int32.Parse(input);
             passwd = new string[size];
             for (int i = 0; i < size; i++)
             {
-                Send(client, buffer, "How many letters in " + (i + 1) + " password? ");
-                Receive(client, buffer);
+                Send(tcpClient.GetStream(), buffer, "How many letters in " + (i + 1) + " password? ");
+                Receive(tcpClient.GetStream(), buffer);
                 for (int j = 0; j < Int32.Parse(input); j++)
                 {
                     passwd[i] += (char)rnd.Next(33, 126);
                 }
-                Send(client, buffer, passwd[i]);
-                Send(client, buffer, "\r\n");
+                Send(tcpClient.GetStream(), buffer, passwd[i]);
+                Send(tcpClient.GetStream(), buffer, "\r\n");
             }
             return;
         }
@@ -193,21 +151,21 @@ namespace Oprogramowanie_Serwera_TCP
         /// </summary>
         public void UI(TcpClient client, byte[] buffer)
         {
-            Receive(client, buffer);
+            Receive(tcpClient.GetStream(), buffer);
 
             switch (input)
             {
                 case "genpass":
-                    GenPass(client, buffer);
+                    GenPass(tcpClient, buffer);
                     break;
                 case "exit":
-                    client.Close();
+                    tcpClient.Close();
                     return;
                 case "":
                     break;
                 default:
                     buffer = Encoding.ASCII.GetBytes("No such command.\r\nTo start please enter the code \"genpass\"\r\nEnter \"exit\" to close the connection\r\n\r\n");
-                    client.GetStream().Write(buffer, 0, buffer.Length);
+                    tcpClient.GetStream().Write(buffer, 0, buffer.Length);
                     break;
             }
         }

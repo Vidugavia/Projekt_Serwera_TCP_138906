@@ -189,12 +189,19 @@ namespace Oprogramowanie_Serwera_TCP
         protected abstract void AcceptClient();
 
         /// <summary>
-
-        /// This function implements Echo and transmits the data between server and client.
-
+        /// This function sends message to client
         /// </summary>
+        /// <param name="stream">Client stream</param>
+        /// <param name="buffer"></param>
+        /// <param name="message">Message to send</param>
+        protected abstract void Send(NetworkStream stream, byte[] buffer, string message);
 
-        protected abstract void BeginDataTransmission(NetworkStream stream);
+        /// <summary>
+        /// This function receives message from client
+        /// </summary>
+        /// <param name="stream">Client stream<</param>
+        /// <param name="buffer"></param>
+        protected abstract void Receive(NetworkStream stream, byte[] buffer);
 
         /// <summary>
 
