@@ -18,12 +18,10 @@ namespace Projekt_Serwera_TCP
                 Console.ResetColor();
             }
         }
-
-
         static void Main(string[] args)
         {            
-            ThreadPool.QueueUserWorkItem(callBack,ConsoleColor.Red);
-            ThreadPool.QueueUserWorkItem(callBack,ConsoleColor.Blue);
+            //ThreadPool.QueueUserWorkItem(callBack,ConsoleColor.Red);
+            //ThreadPool.QueueUserWorkItem(callBack,ConsoleColor.Blue);
 
             PassGenServer server = new PassGenServer(IPAddress.Parse("127.0.0.1"),8000);
             server.Start();

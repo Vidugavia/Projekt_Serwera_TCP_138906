@@ -12,12 +12,11 @@ namespace Oprogramowanie_Serwera_TCP
     public class PassGenServer : TcpSoftware
     {
         #region Fields
-
-        string asciiString = ""; // used to convert from byte[] to string
-        string input = ""; // used to receive proper input to the program
-        char[] charToTrim = { '\0', '\r', '\n' }; // chars we don't want to be in buffer
-        string prompt = "$";
-        byte[] buffer;
+        //private  command; // used to receive proper input to the program
+        private string input;
+        private string prompt = "$";
+        private byte[] buffer = null;
+        private object obj = new object();
 
         public delegate void TransmissionDataDelegate(TcpClient tcpClient);
 
@@ -44,7 +43,8 @@ namespace Oprogramowanie_Serwera_TCP
         private void BeginDataTransmission(TcpClient tcpClient)
         {
             NetworkStream Stream = tcpClient.GetStream();
-            Stream.ReadTimeout = 50000;
+            Stream.ReadTimeout = 60000;
+            PasswordGenerator generator = new PasswordGenerator();
             while (tcpClient.Connected)
             {
                 /// <summary>
@@ -52,9 +52,8 @@ namespace Oprogramowanie_Serwera_TCP
                 /// </summary>
                 try
                 {
-                    buffer = Encoding.ASCII.GetBytes("Password generator server by Dawid Bronszkiewicz.\r\nTo start please enter the code \"genpass\".\r\nEnter \"exit\" to close the connection.\r\n\r\n");
-                    Stream.Write(buffer, 0, buffer.Length);
-                    UI(tcpClient, buffer);
+                    Send(Stream, buffer, "Password generator server by Dawid Bronszkiewicz.\r\nTo start please enter the command \"genpass [how many passwords] [how many characters]\".\r\nEnter \"exit\" to close the connection.\r\n\r\n");
+                    UI(Stream, buffer);
                 }
                 /// <summary>
                 /// Wyłapanie wyjątku powoduje wyświetlenie komunikatu o błędzie i zamknięcie połączenia
@@ -62,8 +61,8 @@ namespace Oprogramowanie_Serwera_TCP
                 catch (IOException)
                 {
                     //exception.Message;
-                    buffer = Encoding.ASCII.GetBytes("ERROR! Closing connection.\r\n\r\n");
-                    Stream.Write(buffer, 0, buffer.Length);
+                    Send(Stream, buffer, "Closing connection.\r\n\r\n");
+                    tcpClient.Close();
                 }
             }
         }
@@ -71,9 +70,7 @@ namespace Oprogramowanie_Serwera_TCP
         protected override void AcceptClient()
         {
             while (true)
-
             {
-
                 TcpClient tcpClient = TcpListener.AcceptTcpClient();
 
                 TransmissionDataDelegate transmissionDelegate = new TransmissionDataDelegate(BeginDataTransmission);
@@ -88,12 +85,9 @@ namespace Oprogramowanie_Serwera_TCP
 
                 ////operacje......
 
-                
-                
                 //while (!result.IsCompleted) ;
 
                 ////sprzątanie
-
             }
         }
 
@@ -120,7 +114,8 @@ namespace Oprogramowanie_Serwera_TCP
         /// </summary>
         protected override void Receive(NetworkStream stream, byte[] buffer)
         {
-            Send(stream, buffer, prompt);
+            string asciiString = ""; // used to convert from byte[] to string
+            char[] charToTrim = { '\0', '\r', '\n' }; // chars we don't want to be in buffer
             buffer = new byte[1024];
             do
             {
@@ -128,58 +123,96 @@ namespace Oprogramowanie_Serwera_TCP
                 asciiString = Encoding.ASCII.GetString(buffer, 0, buffer.Length);
                 input = asciiString.TrimEnd(charToTrim);
             } while (input == "");
-
-        }
-
-        //OPERACJA LOCK do synchronizacji generatora haseł
-
-        /// <summary>
-        /// This is main program to generate passwords
-        /// </summary>
-        void GenPass(NetworkStream stream, byte[] buffer)
-        {
-            Random rnd = new Random();
-            Send(stream, buffer, "How many passwords? ");
-            Receive(stream, buffer);
-            string[] passwd;
-            int size = Int32.Parse(input);
-            passwd = new string[size];
-            for (int i = 0; i < size; i++)
-            {
-                Send(stream, buffer, "How many letters in " + (i + 1) + " password? ");
-                Receive(stream, buffer);
-                for (int j = 0; j < Int32.Parse(input); j++)
-                {
-                    passwd[i] += (char)rnd.Next(33, 126);
-                }
-                Send(stream, buffer, passwd[i]);
-                Send(stream, buffer, "\r\n");
-            }
             return;
         }
 
         /// <summary>
         /// This is main user interface
         /// </summary>
-        public void UI(TcpClient client, byte[] buffer)
+        public void UI(NetworkStream stream, byte[] buffer)
         {
-            Receive(client.GetStream(), buffer);
+            Send(stream, buffer, prompt);
+            Receive(stream, buffer);
 
             switch (input)
             {
                 case "genpass":
-                    GenPass(client.GetStream(), buffer);
+                    lock (obj)
+                    {
+                        GenPass(stream, buffer);
+                    }
                     break;
                 case "exit":
-                    client.Close();
-                    return;
+                    throw new IOException("Close connection");
                 case "":
                     break;
                 default:
-                    buffer = Encoding.ASCII.GetBytes("No such command.\r\nTo start please enter the code \"genpass\"\r\nEnter \"exit\" to close the connection\r\n\r\n");
-                    client.GetStream().Write(buffer, 0, buffer.Length);
+                    Send(stream, buffer, "\n\nNo such command.\r\nTo start please enter the command \"genpass [how many passwords] [how many characters]\"\r\nEnter \"exit\" to close the connection\r\n\r\n");
                     break;
             }
         }
+
+        /// <summary>
+        /// This is function to execute "genpass" command
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="buffer"></param>
+        public void GenPass(NetworkStream stream, byte[] buffer)
+        {
+            Send(stream, buffer, "How many passwords? ");
+            Receive(stream, buffer);
+        }
+        /*
+        void create_command()
+        {
+            command.clear();
+
+            command.emplace_back();
+
+            bool texty = 0;
+
+            while (!input.empty())
+            {
+                if (texty)
+                {
+                    command.back().push_back(input[0]);
+                    input.erase(input.begin());
+                    if (input.front() == '\"')
+                    {
+                        input.erase(input.begin());
+                        if (texty)
+                            texty = 0;
+                        else
+                            texty = 1;
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (input.front() == ' ')
+                    {
+                        while (!input.empty() && input.front() == ' ')
+                            input.erase(input.begin());
+                        command.emplace_back();
+                    }
+                    if (input.empty())
+                    {
+                        command.pop_back();
+                        break;
+                    }
+                    if (input.front() == '\"')
+                    {
+                        input.erase(input.begin());
+                        if (texty)
+                            texty = 0;
+                        else
+                            texty = 1;
+                        continue;
+                    }
+                    command.back().push_back(input[0]);
+                    input.erase(input.begin());
+                }
+            }
+        }*/
     }
 }

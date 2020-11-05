@@ -22,7 +22,7 @@ namespace Oprogramowanie_Serwera_TCP
         bool running;
         int port;
         int buffer_size = 1024;
-        NetworkStream stream { get; set; }
+        protected NetworkStream stream { get; set; }
         
         #endregion
 
