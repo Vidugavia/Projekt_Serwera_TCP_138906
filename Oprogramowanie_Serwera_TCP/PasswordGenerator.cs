@@ -9,17 +9,20 @@ namespace Oprogramowanie_Serwera_TCP
 {
     class PasswordGenerator
     {
+        private object obj = new object();
         /// <summary>
         /// This is main program to generate passwords
         /// </summary>
-        public Password GeneratePassword(int size)
+        public string GeneratePassword(int size)
         {
-            Random rnd = new Random();
-            Password passwd;            
-            passwd = new Password("");
-            for (int j = 0; j < size; j++)
+            string passwd = "";
+            lock (obj)
             {
-                passwd.password.Append((char)rnd.Next(33, 126));
+                Random rnd = new Random(Guid.NewGuid().GetHashCode());                
+                for (int j = 0; j < size; j++)
+                {
+                    passwd += (char)rnd.Next(33, 126);
+                }
             }
             return passwd;
         }        

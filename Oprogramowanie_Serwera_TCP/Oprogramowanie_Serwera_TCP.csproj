@@ -42,7 +42,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PassGenServer.cs" />
-    <Compile Include="Password.cs" />
     <Compile Include="PasswordGenerator.cs" />
     <Compile Include="TcpSoftware.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

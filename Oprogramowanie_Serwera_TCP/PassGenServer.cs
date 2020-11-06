@@ -12,11 +12,10 @@ namespace Oprogramowanie_Serwera_TCP
     public class PassGenServer : TcpSoftware
     {
         #region Fields
-        //private  command; // used to receive proper input to the program
+        private List<string> command = new List<string>(); // used to receive proper input to the program
         private string input;
         private string prompt = "$";
         private byte[] buffer = null;
-        private object obj = new object();
 
         public delegate void TransmissionDataDelegate(TcpClient tcpClient);
 
@@ -44,7 +43,6 @@ namespace Oprogramowanie_Serwera_TCP
         {
             NetworkStream Stream = tcpClient.GetStream();
             Stream.ReadTimeout = 60000;
-            PasswordGenerator generator = new PasswordGenerator();
             while (tcpClient.Connected)
             {
                 /// <summary>
@@ -133,86 +131,70 @@ namespace Oprogramowanie_Serwera_TCP
         {
             Send(stream, buffer, prompt);
             Receive(stream, buffer);
+            create_command();
 
-            switch (input)
+            switch (command[0])
             {
                 case "genpass":
-                    lock (obj)
-                    {
-                        GenPass(stream, buffer);
-                    }
+                    PasswordGenerator generator = new PasswordGenerator();
+                    for (int i = 1; i <= Int32.Parse(command[1]); i++)
+                        Send(stream, buffer, "Password #" + i + ": " + generator.GeneratePassword(Int32.Parse(command[2])) + "\r\n");
                     break;
                 case "exit":
                     throw new IOException("Close connection");
                 case "":
                     break;
                 default:
-                    Send(stream, buffer, "\n\nNo such command.\r\nTo start please enter the command \"genpass [how many passwords] [how many characters]\"\r\nEnter \"exit\" to close the connection\r\n\r\n");
+                    Send(stream, buffer, "\r\nNo such command.\r\nTo start please enter the command \"genpass [how many passwords] [how many characters]\"\r\nEnter \"exit\" to close the connection\r\n\r\n");
                     break;
             }
         }
 
-        /// <summary>
-        /// This is function to execute "genpass" command
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="buffer"></param>
-        public void GenPass(NetworkStream stream, byte[] buffer)
+        private void create_command()
         {
-            Send(stream, buffer, "How many passwords? ");
-            Receive(stream, buffer);
-        }
-        /*
-        void create_command()
-        {
-            command.clear();
+            if(command != null && command.Count() != 0 )
+                command.Clear();
 
-            command.emplace_back();
+            bool texty = false;
+            command.Add("");
 
-            bool texty = 0;
-
-            while (!input.empty())
+            while (input.Length != 0)
             {
                 if (texty)
                 {
-                    command.back().push_back(input[0]);
-                    input.erase(input.begin());
-                    if (input.front() == '\"')
+                    command[command.Count - 1] += input[0];
+                    input = input.Remove(0,1);
+                    if (input[0] == '\"')
                     {
-                        input.erase(input.begin());
+                        input.Remove(0, 1);
                         if (texty)
-                            texty = 0;
+                            texty = false;
                         else
-                            texty = 1;
+                            texty = true;
                         continue;
                     }
                 }
                 else
                 {
-                    if (input.front() == ' ')
+                    if (input[0] == ' ')
                     {
-                        while (!input.empty() && input.front() == ' ')
-                            input.erase(input.begin());
-                        command.emplace_back();
+                        while (input.Length != 0 && input[0] == ' ')
+                            input = input.Remove(0, 1);
+                        command.Add("");
                     }
-                    if (input.empty())
+                    if (input[0] == '\"')
                     {
-                        command.pop_back();
-                        break;
-                    }
-                    if (input.front() == '\"')
-                    {
-                        input.erase(input.begin());
+                        input = input.Remove(0, 1);
                         if (texty)
-                            texty = 0;
+                            texty = false;
                         else
-                            texty = 1;
+                            texty = true;
                         continue;
                     }
-                    command.back().push_back(input[0]);
-                    input.erase(input.begin());
+                    command[command.Count-1] += input[0];
+                    input = input.Remove(0, 1);
                 }
             }
-        }*/
+        }
     }
 }
